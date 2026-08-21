@@ -1,4 +1,3 @@
-
 # Lines that count as "3 in a row" on any 3x3 grid (rows, columns, diagonals).
 # These same 8 lines are used for both a small board and the big board.
 WINNING_LINES = [
@@ -31,8 +30,10 @@ class UltimateTicTacToe:
     # ------------------------------------------------------------------
     # Rule helpers
     # ------------------------------------------------------------------
+
+    # Given a list of 9 marks, return 'X' or 'O' if someone has 3 in a row, else None.
     def _line_winner(self, marks):
-        """Given a list of 9 marks, return 'X' or 'O' if someone has 3 in a row, else None."""
+        
         for a, b, c in WINNING_LINES:
             if marks[a] != EMPTY and marks[a] == marks[b] == marks[c]:
                 return marks[a]
@@ -41,8 +42,20 @@ class UltimateTicTacToe:
     def _board_is_full(self, b):
         return all(mark != EMPTY for mark in self.cells[b])
 
+    # Return a fast, independent copy of this game.
+    def clone(self):
+        
+        twin = UltimateTicTacToe.__new__(UltimateTicTacToe)   # new object, skip __init__
+        twin.cells = [row[:] for row in self.cells]           # copy each small board
+        twin.board_result = self.board_result[:]
+        twin.current_player = self.current_player
+        twin.active_board = self.active_board
+        twin.winner = self.winner
+        return twin
+
+    # Return every legal (board, cell) move for the current player.
     def legal_moves(self):
-        """Return every legal (board, cell) move for the current player."""
+        
         if self.active_board is not None and self.board_result[self.active_board] == EMPTY:
             # Forced into one specific (still-playable) board.
             boards = [self.active_board]
@@ -57,8 +70,9 @@ class UltimateTicTacToe:
                     moves.append((b, c))
         return moves
 
+    # Place the current player's mark. Updates board results, winner, and the next active board.
     def make_move(self, board, cell):
-        """Place the current player's mark. Updates board results, winner, and the next active board."""
+        
         if (board, cell) not in self.legal_moves():
             raise ValueError(f"Illegal move: board {board}, cell {cell}")
 
@@ -96,8 +110,9 @@ class UltimateTicTacToe:
     # ------------------------------------------------------------------
     # Display
     # ------------------------------------------------------------------
+    # What to show in a square: the mark if played, otherwise the cell number.
     def _cell_char(self, b, c):
-        """What to show in a square: the mark if played, otherwise the cell number (a hint for input)."""
+        
         return self.cells[b][c] if self.cells[b][c] != EMPTY else str(c)
 
     def render(self):
@@ -118,8 +133,9 @@ class UltimateTicTacToe:
                 lines.append("-" * len(lines[-1]))      # divider between rows of small boards
         print("\n".join(lines))
 
+    # A small 3x3 showing who has WON each board.
     def board_summary(self):
-        """A small 3x3 showing who has WON each board (for a quick strategic view)."""
+        
         print("\nBoards won so far:")
         for r in range(3):
             row = []
@@ -127,59 +143,3 @@ class UltimateTicTacToe:
                 res = self.board_result[r * 3 + cidx]
                 row.append(res if res != EMPTY else ".")
             print("  " + " ".join(row))
-
-
-# ----------------------------------------------------------------------
-# Human-vs-human command-line loop
-# ----------------------------------------------------------------------
-def ask_move(game):
-    """Prompt the current human for a legal move and return it as (board, cell)."""
-    if game.active_board is None:
-        where = "any board (free move)"
-    else:
-        where = f"board {game.active_board}"
-
-    while True:
-        print(f"\nPlayer {game.current_player} -- you must play in {where}.")
-        raw = input("Enter your move as 'board cell' (e.g. 4 2), or 'q' to quit: ").strip()
-        if raw.lower() in ("q", "quit", "exit"):
-            return None
-        parts = raw.split()
-        if len(parts) != 2 or not all(p.isdigit() for p in parts):
-            print("  Please enter two numbers 0-8, separated by a space.")
-            continue
-        board, cell = int(parts[0]), int(parts[1])
-        if not (0 <= board <= 8 and 0 <= cell <= 8):
-            print("  Numbers must be between 0 and 8.")
-            continue
-        if (board, cell) not in game.legal_moves():
-            print("  That move isn't legal right now. Check the active board and that the square is empty.")
-            continue
-        return (board, cell)
-
-
-def play():
-    game = UltimateTicTacToe()
-    print(__doc__)   # show the rules / numbering at the start
-
-    while not game.game_over():
-        print("\n" + "=" * 41)
-        game.render()
-        game.board_summary()
-        move = ask_move(game)
-        if move is None:
-            print("Game quit.")
-            return
-        game.make_move(*move)
-
-    print("\n" + "=" * 41)
-    game.render()
-    game.board_summary()
-    if game.winner == "D":
-        print("\nResult: it's a draw.")
-    else:
-        print(f"\nResult: Player {game.winner} wins the game!")
-
-
-if __name__ == "__main__":
-    play()
